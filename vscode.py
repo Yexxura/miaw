@@ -1,39 +1,34 @@
-import os
-import sys
 import subprocess
 import shutil
 import webbrowser
 import time
+import sys
+import os
 
-HOME = os.path.expanduser("~")
-LOCAL_BIN = os.path.join(HOME, ".local", "bin")
-CODE_SERVER = shutil.which("code-server")
+# Cegah root user
+if os.geteuid() == 0:
+    print("❌ Jangan jalankan script ini sebagai root.")
+    sys.exit(1)
 
-# Pastikan ~/.local/bin ada di PATH (untuk sesi ini saja)
-os.environ["PATH"] += os.pathsep + LOCAL_BIN
+# Cek apakah code-server tersedia di PATH
+code_server_path = shutil.which("code-server")
+if not code_server_path:
+    print("❌ 'code-server' tidak ditemukan di PATH.")
+    print("➡️  Silakan install manual tanpa sudo lalu pastikan masuk ke PATH.")
+    sys.exit(1)
 
-if not CODE_SERVER:
-    print("[📦] code-server belum ditemukan. Menginstall secara lokal (tanpa root)...")
-    install_cmd = "curl -fsSL https://code-server.dev/install.sh | bash"
-    try:
-        subprocess.check_call(install_cmd, shell=True, executable="/bin/bash")
-    except subprocess.CalledProcessError:
-        print("❌ Gagal menginstall code-server.")
-        sys.exit(1)
-    CODE_SERVER = shutil.which("code-server")
-    if not CODE_SERVER:
-        print("❌ Instalasi selesai, tapi code-server tidak ditemukan.")
-        print("💡 Tambahkan ini ke shell kamu:\nexport PATH=\"$HOME/.local/bin:$PATH\"")
-        sys.exit(1)
-
-print("[🚀] Menjalankan code-server di http://localhost:8080 ...")
+# Jalankan code-server
+print(f"🚀 Menjalankan code-server dari: {code_server_path}")
 subprocess.Popen([
-    CODE_SERVER,
-    '--port', '8080',
-    '--auth', 'none',
-    '--bind-addr', '127.0.0.1:8080'
+    code_server_path,
+    "--port", "8080",
+    "--auth", "none",
+    "--bind-addr", "127.0.0.1:8080"
 ])
 
+# Tunggu server hidup
 time.sleep(3)
+
+# Buka browser
 webbrowser.open("http://localhost:8080")
-print("[🌐] VSCode Web siap digunakan.")
+print("🌐 VSCode Web terbuka di browser.")
