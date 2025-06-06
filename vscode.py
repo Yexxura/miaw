@@ -5,37 +5,35 @@ import shutil
 import webbrowser
 import time
 
-# Cek code-server di PATH user
-code_server_path = shutil.which("code-server")
+HOME = os.path.expanduser("~")
+LOCAL_BIN = os.path.join(HOME, ".local", "bin")
+CODE_SERVER = shutil.which("code-server")
 
-# Jika belum ada, install di user space (tanpa sudo)
-if not code_server_path:
-    print("[🌐] code-server belum ditemukan. Menginstall secara lokal (tanpa root)...")
+# Pastikan ~/.local/bin ada di PATH (untuk sesi ini saja)
+os.environ["PATH"] += os.pathsep + LOCAL_BIN
+
+if not CODE_SERVER:
+    print("[📦] code-server belum ditemukan. Menginstall secara lokal (tanpa root)...")
+    install_cmd = "curl -fsSL https://code-server.dev/install.sh | bash"
     try:
-        subprocess.check_call("curl -fsSL https://code-server.dev/install.sh | bash", shell=True)
+        subprocess.check_call(install_cmd, shell=True, executable="/bin/bash")
     except subprocess.CalledProcessError:
-        print("❌ Gagal menginstall code-server. Pastikan ada koneksi internet.")
+        print("❌ Gagal menginstall code-server.")
+        sys.exit(1)
+    CODE_SERVER = shutil.which("code-server")
+    if not CODE_SERVER:
+        print("❌ Instalasi selesai, tapi code-server tidak ditemukan.")
+        print("💡 Tambahkan ini ke shell kamu:\nexport PATH=\"$HOME/.local/bin:$PATH\"")
         sys.exit(1)
 
-    # Setelah install, coba cek ulang
-    code_server_path = shutil.which("code-server")
-    if not code_server_path:
-        print("❌ code-server masih tidak ditemukan setelah instalasi.")
-        print("💡 Coba tambahkan ~/.local/bin ke PATH, lalu jalankan ulang script ini.")
-        sys.exit(1)
-
-# Jalankan code-server (bind ke localhost)
 print("[🚀] Menjalankan code-server di http://localhost:8080 ...")
 subprocess.Popen([
-    code_server_path,
+    CODE_SERVER,
     '--port', '8080',
     '--auth', 'none',
     '--bind-addr', '127.0.0.1:8080'
 ])
 
-# Tunggu agar server siap
 time.sleep(3)
-
-# Buka browser
 webbrowser.open("http://localhost:8080")
-print("[🌐] Browser terbuka ke VSCode Web")
+print("[🌐] VSCode Web siap digunakan.")
